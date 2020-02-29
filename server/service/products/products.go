@@ -11,11 +11,37 @@ import (
 	"net/http"
 
 	"gin-group-buy/server/db"
+	"gin-group-buy/server/enum"
 	"gin-group-buy/server/model"
 	"gin-group-buy/server/service/mylinebot"
 )
 
 var myBot = mylinebot.Init()
+
+const (
+	ADD_TO_CART        enum.CartEnum = enum.ADD_TO_CART
+	ADD_CART_SUCCESS   enum.CartEnum = enum.ADD_CART_SUCCESS
+	ADD_CART_FAIL      enum.CartEnum = enum.ADD_CART_FAIL
+	EMPTY_CART         enum.CartEnum = enum.EMPTY_CART
+	CHECK_CART         enum.CartEnum = enum.CHECK_CART
+	CLEAR_CART         enum.CartEnum = enum.CLEAR_CART
+	CLEAR_CART_SUCCESS enum.CartEnum = enum.CLEAR_CART_SUCCESS
+	CURRENT_CART       enum.CartEnum = enum.CURRENT_CART
+	CHECKOUT           enum.CartEnum = enum.CHECKOUT
+
+	INPUT_KEYWORDS enum.ProductEnum = enum.INPUT_KEYWORDS
+
+	GROUP_BUY_PRODUCT   enum.OrderEnum = enum.GROUP_BUY_PRODUCT
+	PRICE               enum.OrderEnum = enum.PRICE
+	QTY                 enum.OrderEnum = enum.QTY
+	ORDER_DETAIL        enum.OrderEnum = enum.ORDER_DETAIL
+	TRANSFER_BANK_NUM   enum.OrderEnum = enum.TRANSFER_BANK_NUM
+	TRANSFER_ACCOUNT    enum.OrderEnum = enum.TRANSFER_ACCOUNT
+	TRANSFER_AMOUNT     enum.OrderEnum = enum.TRANSFER_AMOUNT
+	MONEY_TRANSFER      enum.OrderEnum = enum.MONEY_TRANSFER
+	MONEY_TRANSFER_TIPS enum.OrderEnum = enum.MONEY_TRANSFER_TIPS
+	TOTAL_PRICE         enum.OrderEnum = enum.TOTAL_PRICE
+)
 
 // PostHandler -
 func PostHandler() gin.HandlerFunc {
@@ -44,16 +70,16 @@ func PostHandler() gin.HandlerFunc {
 				case *linebot.TextMessage:
 					matchText := message.Text
 					buyProductName := ""
-					if strings.Contains(matchText, "+1") {
+					if strings.Contains(matchText, ADD_TO_CART.String()) {
 						buyProductName = strings.Split(matchText, ",")[1]
 						matchText = strings.Split(matchText, ",")[0]
 					}
 
 					switch matchText {
-					case "+1":
-						replyMsg := "+1 失敗"
+					case ADD_TO_CART.String():
+						replyMsg := ADD_CART_FAIL.String()
 						if addCarts(profile.DisplayName, buyProductName, 1) {
-							replyMsg = " " + buyProductName + " +1 成功"
+							replyMsg = " " + buyProductName + " " + ADD_CART_SUCCESS.String()
 						}
 						if _, err := myBot.ReplyMessage(
 							event.ReplyToken,
@@ -62,7 +88,7 @@ func PostHandler() gin.HandlerFunc {
 						).Do(); err != nil {
 							log.Print(err)
 						}
-					case "團購商品":
+					case GROUP_BUY_PRODUCT.String():
 						if _, err := myBot.ReplyMessage(
 							event.ReplyToken,
 							myMenuTemplate(),
@@ -70,19 +96,20 @@ func PostHandler() gin.HandlerFunc {
 						).Do(); err != nil {
 							log.Print(err)
 						}
-					case "查看購物車":
+					case CHECK_CART.String():
 						carts := getCartsByUsername(profile.DisplayName)
-						repMsg := "目前購物車有: \n\n"
-						cartIsEmpty := "購物車是空的"
+						repMsg := CURRENT_CART.String() + ": \n\n"
+						cartIsEmpty := EMPTY_CART.String()
 						totalPrice := 0
 
 						for _, cart := range carts {
 							cartQtyStr := fmt.Sprintf("%d", cart.Qty)
-							repMsg += cart.ProductName + ", 價格: $" + fmt.Sprintf("%d", cart.Price) + ", 數量: " + cartQtyStr + "\n"
-
+							repMsg += cart.ProductName + ", "
+							repMsg += PRICE.String() + ": $" + fmt.Sprintf("%d", cart.Price) + ", "
+							repMsg += QTY.String() + ": " + cartQtyStr + "\n"
 							totalPrice += cart.Price * cart.Qty
 						}
-						repMsg += "\n總計: $ " + fmt.Sprintf("%d", totalPrice) + "\n"
+						repMsg += "\n" + TOTAL_PRICE.String() + ": $ " + fmt.Sprintf("%d", totalPrice) + "\n"
 
 						if totalPrice <= 0 {
 							repMsg = cartIsEmpty
@@ -95,9 +122,9 @@ func PostHandler() gin.HandlerFunc {
 						).Do(); err != nil {
 							log.Print(err)
 						}
-					case "清除購物車":
+					case CLEAR_CART.String():
 						if clearCarts(profile.DisplayName) {
-							repMsg := "清除成功"
+							repMsg := CLEAR_CART_SUCCESS.String()
 							if _, err := myBot.ReplyMessage(
 								event.ReplyToken,
 								linebot.NewTextMessage(repMsg),
@@ -106,17 +133,19 @@ func PostHandler() gin.HandlerFunc {
 								log.Print(err)
 							}
 						}
-					case "結帳":
+					case CHECKOUT.String():
 						carts := getCartsByUsername(profile.DisplayName)
-						repMsg := "明細如下: \n\n"
-						cartIsEmpty := "購物車是空的"
+						repMsg := ORDER_DETAIL.String() + ": \n\n"
+						cartIsEmpty := EMPTY_CART.String()
 						totalPrice := 0
 						testBankNum := "007"
 						testAccount := "001234567899999"
 
 						for _, cart := range carts {
 							cartQtyStr := fmt.Sprintf("%d", cart.Qty)
-							repMsg += cart.ProductName + ", 價格: $" + fmt.Sprintf("%d", cart.Price) + ", 數量: " + cartQtyStr + "\n"
+							repMsg += cart.ProductName + ", "
+							repMsg += PRICE.String() + ": $" + fmt.Sprintf("%d", cart.Price) + ", "
+							repMsg += QTY.String() + ": " + cartQtyStr + "\n"
 
 							totalPrice += cart.Price * cart.Qty
 						}
@@ -125,11 +154,11 @@ func PostHandler() gin.HandlerFunc {
 							repMsg = cartIsEmpty
 						} else {
 							totalPriceStr := fmt.Sprintf("%d", totalPrice)
-							repMsg += "\n總計: $ " + totalPriceStr + "\n\n"
-							repMsg += "銀行代號: " + testBankNum + "\n"
-							repMsg += "匯款帳戶: " + testAccount + "\n"
-							repMsg += "匯款金額: $ " + totalPriceStr + "\n"
-							repMsg += "\n請於2日內，匯款至以下指定帳戶，我們收到後會儘快為您出貨，謝謝您的配合。\n"
+							repMsg += "\n" + TOTAL_PRICE.String() + ": $ " + totalPriceStr + "\n\n"
+							repMsg += TRANSFER_BANK_NUM.String() + ": " + testBankNum + "\n"
+							repMsg += TRANSFER_ACCOUNT.String() + ": " + testAccount + "\n"
+							repMsg += TRANSFER_AMOUNT.String() + ": $ " + totalPriceStr + "\n"
+							repMsg += "\n" + MONEY_TRANSFER_TIPS.String() + "\n"
 						}
 
 						clearCarts(profile.DisplayName)
@@ -208,8 +237,8 @@ func newMessageAction(label string, text string) *linebot.MessageAction {
 
 func myMenuTemplate() *linebot.TemplateMessage {
 	products := getAllProducts()
-	wannaBuyStr := "我想+1"
-	altText := "團購人氣商品"
+	wannaBuyStr := ADD_TO_CART.String()
+	altText := GROUP_BUY_PRODUCT.String()
 	arouselColumns := []*linebot.CarouselColumn{}
 
 	for _, product := range products {
@@ -220,7 +249,7 @@ func myMenuTemplate() *linebot.TemplateMessage {
 				product.Name,
 				actionLabel,
 				wannaBuyStr,
-				"+1,"+product.Name,
+				ADD_TO_CART.String()+","+product.Name,
 			),
 		)
 	}
@@ -231,14 +260,19 @@ func myMenuTemplate() *linebot.TemplateMessage {
 }
 
 func myQuickReply() linebot.SendingMessage {
-	content := "快速選單或輸入商品關鍵字"
+	content := INPUT_KEYWORDS.String()
 	imageURLs := []string{
 		"https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E6%B5%B7%E8%8B%94%E7%A6%AE%E7%9B%92.jpg?alt=media&token=4e1e859f-fae6-41de-86f4-94a506c3a2a9",
 		"https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b",
 		"https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b",
 		"https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b",
 	}
-	labels := []string{"團購商品", "查看購物車", "結帳", "清除購物車"}
+	labels := []string{
+		GROUP_BUY_PRODUCT.String(),
+		CHECK_CART.String(),
+		CHECKOUT.String(),
+		CLEAR_CART.String(),
+	}
 	quickReplyButtons := []*linebot.QuickReplyButton{}
 
 	for k, v := range labels {
