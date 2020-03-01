@@ -42,12 +42,12 @@ const (
 	MONEY_TRANSFER_TIPS enum.OrderEnum = enum.MONEY_TRANSFER_TIPS
 	TOTAL_PRICE         enum.OrderEnum = enum.TOTAL_PRICE
 
-	TEST_BANK_NUM     = "007"
-	TEST_BANK_ACCOUNT = "001234567899999"
-	IMG_URL_OPTION_1  = "https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E6%B5%B7%E8%8B%94%E7%A6%AE%E7%9B%92.jpg?alt=media&token=4e1e859f-fae6-41de-86f4-94a506c3a2a9"
-	IMG_URL_OPTION_2  = "https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b"
-	IMG_URL_OPTION_3  = "https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b"
-	IMG_URL_OPTION_4  = "https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b"
+	TEST_BANK_NUM                    = enum.TEST_BANK_NUM
+	TEST_BANK_ACCOUNT                = enum.TEST_BANK_ACCOUNT
+	IMG_URL_OPTION_GROUP_BUY_PRODUCT = enum.IMG_URL_OPTION_GROUP_BUY_PRODUCT
+	IMG_URL_OPTION_CHECK_CART        = enum.IMG_URL_OPTION_CHECK_CART
+	IMG_URL_OPTION_CHECKOUT          = enum.IMG_URL_OPTION_CHECKOUT
+	IMG_URL_OPTION_CLEAR_CART        = enum.IMG_URL_OPTION_CLEAR_CART
 )
 
 // PostHandler -
@@ -269,10 +269,10 @@ func myMenuTemplate() *linebot.TemplateMessage {
 func myQuickReply() linebot.SendingMessage {
 	content := INPUT_KEYWORDS.String()
 	imageURLs := []string{
-		IMG_URL_OPTION_1,
-		IMG_URL_OPTION_2,
-		IMG_URL_OPTION_3,
-		IMG_URL_OPTION_4,
+		IMG_URL_OPTION_GROUP_BUY_PRODUCT,
+		IMG_URL_OPTION_CHECK_CART,
+		IMG_URL_OPTION_CHECKOUT,
+		IMG_URL_OPTION_CLEAR_CART,
 	}
 	labels := []string{
 		GROUP_BUY_PRODUCT.String(),
