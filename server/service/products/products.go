@@ -41,19 +41,24 @@ const (
 	MONEY_TRANSFER      enum.OrderEnum = enum.MONEY_TRANSFER
 	MONEY_TRANSFER_TIPS enum.OrderEnum = enum.MONEY_TRANSFER_TIPS
 	TOTAL_PRICE         enum.OrderEnum = enum.TOTAL_PRICE
+
+	TEST_BANK_NUM     = "007"
+	TEST_BANK_ACCOUNT = "001234567899999"
+	IMG_URL_OPTION_1  = "https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E6%B5%B7%E8%8B%94%E7%A6%AE%E7%9B%92.jpg?alt=media&token=4e1e859f-fae6-41de-86f4-94a506c3a2a9"
+	IMG_URL_OPTION_2  = "https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b"
+	IMG_URL_OPTION_3  = "https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b"
+	IMG_URL_OPTION_4  = "https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b"
 )
 
 // PostHandler -
 func PostHandler() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		events, err := myBot.ParseRequest(context.Request)
-		fmt.Println(events)
-
 		if err != nil {
 			if err == linebot.ErrInvalidSignature {
 				context.JSON(http.StatusBadRequest, nil)
 			} else {
-				context.JSON(500, nil)
+				context.JSON(http.StatusInternalServerError, nil)
 			}
 			return
 		}
@@ -70,6 +75,7 @@ func PostHandler() gin.HandlerFunc {
 				case *linebot.TextMessage:
 					matchText := message.Text
 					buyProductName := ""
+
 					if strings.Contains(matchText, ADD_TO_CART.String()) {
 						buyProductName = strings.Split(matchText, ",")[1]
 						matchText = strings.Split(matchText, ",")[0]
@@ -78,9 +84,11 @@ func PostHandler() gin.HandlerFunc {
 					switch matchText {
 					case ADD_TO_CART.String():
 						replyMsg := ADD_CART_FAIL.String()
+
 						if addCarts(profile.DisplayName, buyProductName, 1) {
 							replyMsg = " " + buyProductName + " " + ADD_CART_SUCCESS.String()
 						}
+
 						if _, err := myBot.ReplyMessage(
 							event.ReplyToken,
 							linebot.NewTextMessage(profile.DisplayName+replyMsg),
@@ -125,6 +133,7 @@ func PostHandler() gin.HandlerFunc {
 					case CLEAR_CART.String():
 						if clearCarts(profile.DisplayName) {
 							repMsg := CLEAR_CART_SUCCESS.String()
+
 							if _, err := myBot.ReplyMessage(
 								event.ReplyToken,
 								linebot.NewTextMessage(repMsg),
@@ -138,15 +147,14 @@ func PostHandler() gin.HandlerFunc {
 						repMsg := ORDER_DETAIL.String() + ": \n\n"
 						cartIsEmpty := EMPTY_CART.String()
 						totalPrice := 0
-						testBankNum := "007"
-						testAccount := "001234567899999"
+						testBankNum := TEST_BANK_NUM
+						testAccount := TEST_BANK_ACCOUNT
 
 						for _, cart := range carts {
 							cartQtyStr := fmt.Sprintf("%d", cart.Qty)
 							repMsg += cart.ProductName + ", "
 							repMsg += PRICE.String() + ": $" + fmt.Sprintf("%d", cart.Price) + ", "
 							repMsg += QTY.String() + ": " + cartQtyStr + "\n"
-
 							totalPrice += cart.Price * cart.Qty
 						}
 
@@ -162,6 +170,7 @@ func PostHandler() gin.HandlerFunc {
 						}
 
 						clearCarts(profile.DisplayName)
+
 						if _, err := myBot.ReplyMessage(
 							event.ReplyToken,
 							linebot.NewTextMessage(repMsg),
@@ -213,21 +222,18 @@ func newCarouselColumn(imageURL, title, text string, actionLabel string, actionT
 func getAllProducts() []model.Product {
 	products := []model.Product{}
 	db.Db.Where("active = ?", "1").Find(&products)
-
 	return products
 }
 
 func getProductsLike(name string, limit int) []model.Product {
 	products := []model.Product{}
 	db.Db.Where("name LIKE ?", "%"+name+"%").Limit(limit).Find(&products)
-
 	return products
 }
 
 func getProductLike(name string) model.Product {
 	product := model.Product{}
 	db.Db.Where("name LIKE ?", "%"+name+"%").First(&product)
-
 	return product
 }
 
@@ -253,6 +259,7 @@ func myMenuTemplate() *linebot.TemplateMessage {
 			),
 		)
 	}
+
 	template := linebot.NewCarouselTemplate(arouselColumns...)
 	templateMessage := linebot.NewTemplateMessage(altText, template)
 
@@ -262,10 +269,10 @@ func myMenuTemplate() *linebot.TemplateMessage {
 func myQuickReply() linebot.SendingMessage {
 	content := INPUT_KEYWORDS.String()
 	imageURLs := []string{
-		"https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E6%B5%B7%E8%8B%94%E7%A6%AE%E7%9B%92.jpg?alt=media&token=4e1e859f-fae6-41de-86f4-94a506c3a2a9",
-		"https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b",
-		"https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b",
-		"https://firebasestorage.googleapis.com/v0/b/atomy-bot.appspot.com/o/%E8%89%BE%E5%A4%9A%E7%BE%8E%20%E7%89%A9%E7%90%86%E6%80%A7%E9%98%B2%E6%9B%AC%E8%86%8F.jpg?alt=media&token=e659398b-c5a5-4e0e-ae91-614633d2355b",
+		IMG_URL_OPTION_1,
+		IMG_URL_OPTION_2,
+		IMG_URL_OPTION_3,
+		IMG_URL_OPTION_4,
 	}
 	labels := []string{
 		GROUP_BUY_PRODUCT.String(),
