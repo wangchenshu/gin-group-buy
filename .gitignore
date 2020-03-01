@@ -16,3 +16,6 @@
 
 .env
 .env.bak
+
+linux/gin-group-buy.service
+linux/start-group-buy-service.sh
